@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Tasks</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f7f7f5;
+      --surface: #ffffff;
+      --border: rgba(0,0,0,0.10);
+      --border-hover: rgba(0,0,0,0.20);
+      --text-primary: #1a1a18;
+      --text-secondary: #6b6b67;
+      --text-muted: #aeaead;
+      --accent: #2563eb;
+      --accent-bg: #eff6ff;
+      --accent-text: #1d4ed8;
+      --danger: #dc2626;
+      --danger-bg: #fef2f2;
+      --success-bg: #f0fdf4;
+      --success-text: #15803d;
+      --warning-bg: #fffbeb;
+      --warning-text: #b45309;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.10);
+      --shadow-lg: 0 8px 32px rgba(0,0,0,0.14);
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      min-height: 100vh;
+      padding: 2.5rem 1rem 6rem;
+    }
+
+    /* ── App Shell ── */
+    .app {
+      max-width: 580px;
+      margin: 0 auto;
+    }
+
+    .header {
+      margin-bottom: 2rem;
+    }
+    .header h1 {
+      font-size: 26px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+    }
+    .header p {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 3px;
+    }
+
+    /* ── Add Row ── */
+    .add-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 1.25rem;
+    }
+    .add-row input {
+      flex: 1;
+      height: 42px;
+      padding: 0 14px;
+      font-size: 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .add-row input::placeholder { color: var(--text-muted); }
+    .add-row input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+    }
+    .add-btn {
+      height: 42px;
+      padding: 0 18px;
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      border-radius: var(--radius-md);
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      white-space: nowrap;
+    }
+    .add-btn:hover { background: #1d4ed8; }
+    .add-btn:active { transform: scale(0.97); }
+
+    /* ── Filters ── */
+    .filters {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 1rem;
+    }
+    .filter-btn {
+      height: 30px;
+      padding: 0 14px;
+      font-size: 12px;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .filter-btn.active {
+      background: var(--accent-bg);
+      color: var(--accent-text);
+      border-color: rgba(37,99,235,0.25);
+    }
+    .filter-btn:hover:not(.active) {
+      background: rgba(0,0,0,0.04);
+    }
+
+    /* ── Task List ── */
+    .tasks { display: flex; flex-direction: column; gap: 6px; }
+
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      transition: border-color 0.15s, box-shadow 0.15s;
+      animation: slideIn 0.18s ease;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .task-item:hover {
+      border-color: var(--border-hover);
+      box-shadow: var(--shadow-sm);
+    }
+    .task-item.done .task-text {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+
+    /* checkbox */
+    .checkbox {
+      width: 20px; height: 20px;
+      border: 1.5px solid var(--border-hover);
+      border-radius: 5px;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .checkbox:hover { border-color: var(--accent); }
+    .checkbox.checked {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .checkbox.checked::after {
+      content: '';
+      width: 11px; height: 7px;
+      border-left: 2px solid #fff;
+      border-bottom: 2px solid #fff;
+      transform: rotate(-45deg) translateY(-1px);
+      display: block;
+    }
+
+    .task-text {
+      flex: 1;
+      font-size: 14px;
+      line-height: 1.45;
+      color: var(--text-primary);
+    }
+
+    /* tag */
+    .task-tag {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 2px 9px;
+      border-radius: 12px;
+      flex-shrink: 0;
+    }
+    .tag-work     { background: var(--warning-bg); color: var(--warning-text); }
+    .tag-personal { background: var(--success-bg); color: var(--success-text); }
+    .tag-urgent   { background: var(--danger-bg);  color: var(--danger); }
+
+    /* delete button — always visible */
+    .delete-btn {
+      width: 28px; height: 28px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 15px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.15s;
+      padding: 0;
+      line-height: 1;
+    }
+    .delete-btn:hover {
+      background: var(--danger-bg);
+      border-color: rgba(220,38,38,0.25);
+      color: var(--danger);
+    }
+    .delete-btn:active { transform: scale(0.93); }
+
+    .empty {
+      text-align: center;
+      padding: 3.5rem 1rem;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+    .footer-stats {
+      margin-top: 1.25rem;
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    /* ── AI Copilot FAB ── */
+    .ai-fab {
+      position: fixed;
+      bottom: 24px; right: 24px;
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      box-shadow: var(--shadow-lg);
+      transition: transform 0.2s, background 0.15s;
+      z-index: 200;
+    }
+    .ai-fab:hover { transform: scale(1.08); background: #1d4ed8; }
+    .ai-fab.open  { transform: rotate(45deg) scale(1.05); background: #1d4ed8; }
+
+    /* ── Chatbot Panel ── */
+    .chat-panel {
+      position: fixed;
+      bottom: 90px; right: 24px;
+      width: 340px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+      z-index: 199;
+      transform: scale(0.92) translateY(12px);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.22s cubic-bezier(.22,1,.36,1), opacity 0.18s;
+      max-height: 520px;
+    }
+    .chat-panel.open {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .chat-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .chat-avatar {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    .chat-header-info { flex: 1; }
+    .chat-header-info strong { font-size: 13px; font-weight: 600; display: block; }
+    .chat-header-info span {
+      font-size: 11px; color: var(--success-text);
+      display: flex; align-items: center; gap: 4px;
+    }
+    .online-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #22c55e; display: inline-block;
+    }
+    .chat-close {
+      width: 28px; height: 28px;
+      border: none; background: none;
+      color: var(--text-muted);
+      font-size: 18px; cursor: pointer;
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.12s;
+    }
+    .chat-close:hover { background: var(--bg); }
+
+    .chat-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px 14px 8px;
+      display: flex; flex-direction: column; gap: 10px;
+      min-height: 200px;
+      max-height: 340px;
+    }
+
+    /* message bubbles */
+    .msg {
+      display: flex;
+      gap: 8px;
+      animation: msgIn 0.18s ease;
+    }
+    @keyframes msgIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .msg.user { flex-direction: row-reverse; }
+    .bubble {
+      max-width: 78%;
+      padding: 9px 13px;
+      border-radius: 14px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .msg.bot  .bubble { background: var(--bg); color: var(--text-primary); border-radius: 4px 14px 14px 14px; }
+    .msg.user .bubble { background: var(--accent); color: #fff; border-radius: 14px 4px 14px 14px; }
+    .msg-avatar {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px;
+      flex-shrink: 0;
+      align-self: flex-end;
+    }
+    .msg.user .msg-avatar { background: var(--border); font-size: 12px; }
+
+    /* typing indicator */
+    .typing-dots {
+      display: flex; gap: 4px; align-items: center;
+      padding: 4px 2px;
+    }
+    .typing-dots span {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      animation: bounce 1.2s infinite;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-5px); }
+    }
+
+    /* quick suggestions */
+    .suggestions {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      padding: 0 14px 10px;
+      flex-shrink: 0;
+    }
+    .suggestion-chip {
+      padding: 5px 11px;
+      font-size: 12px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--bg);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+    .suggestion-chip:hover {
+      border-color: var(--accent);
+      color: var(--accent-text);
+      background: var(--accent-bg);
+    }
+
+    /* chat input */
+    .chat-footer {
+      display: flex; gap: 8px;
+      padding: 10px 12px 12px;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .chat-input {
+      flex: 1;
+      height: 38px;
+      padding: 0 12px;
+      font-size: 13px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--bg);
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .chat-input::placeholder { color: var(--text-muted); }
+    .chat-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.10);
+    }
+    .send-btn {
+      width: 38px; height: 38px;
+      border: none;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px;
+      flex-shrink: 0;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .send-btn:hover { background: #1d4ed8; }
+    .send-btn:active { transform: scale(0.93); }
+
+    /* scrollbar */
+    .chat-body::-webkit-scrollbar { width: 4px; }
+    .chat-body::-webkit-scrollbar-track { background: transparent; }
+    .chat-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <div class="header">
+    <h1>My Tasks</h1>
+    <p id="date-line"></p>
+  </div>
+
+  <div class="add-row">
+    <input type="text" id="task-input" placeholder="Add a new task..." maxlength="120" />
+    <button class="add-btn" onclick="addTask()">+ Add</button>
+  </div>
+
+  <div class="filters">
+    <button class="filter-btn active" onclick="setFilter('all', this)">All</button>
+    <button class="filter-btn" onclick="setFilter('active', this)">Active</button>
+    <button class="filter-btn" onclick="setFilter('done', this)">Done</button>
+  </div>
+
+  <div class="tasks" id="task-list"></div>
+  <div class="footer-stats" id="stats"></div>
+</div>
+
+<!-- AI Copilot FAB -->
+<button class="ai-fab" id="ai-fab" title="AI Copilot">✦</button>
+
+<!-- Chatbot Panel -->
+<div class="chat-panel" id="chat-panel">
+  <div class="chat-header">
+    <div class="chat-avatar">✦</div>
+    <div class="chat-header-info">
+      <strong>AI Copilot</strong>
+      <span><span class="online-dot"></span> Online</span>
+    </div>
+    <button class="chat-close" onclick="toggleChat()">×</button>
+  </div>
+
+  <div class="chat-body" id="chat-body">
+    <!-- messages rendered here -->
+  </div>
+
+  <div class="suggestions" id="suggestions">
+    <button class="suggestion-chip" onclick="sendSuggestion(this)">What should I do first?</button>
+    <button class="suggestion-chip" onclick="sendSuggestion(this)">Summarize my tasks</button>
+    <button class="suggestion-chip" onclick="sendSuggestion(this)">Add a reminder</button>
+  </div>
+
+  <div class="chat-footer">
+    <input class="chat-input" id="chat-input" type="text" placeholder="Ask your copilot..." maxlength="200" />
+    <button class="send-btn" onclick="sendMessage()">&#9658;</button>
+  </div>
+</div>
+
+<script>
+  /* ── Date ── */
+  document.getElementById('date-line').textContent = new Date().toLocaleDateString('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric'
+  });
+
+  /* ── Tasks ── */
+  let tasks = [
+    { id: 1, text: 'Review project proposal', done: false, tag: 'work' },
+    { id: 2, text: 'Buy groceries', done: false, tag: 'personal' },
+    { id: 3, text: 'Submit expense report', done: false, tag: 'urgent' },
+    { id: 4, text: 'Call dentist for appointment', done: true, tag: 'personal' },
+  ];
+  let nextId = 5;
+  let filter = 'all';
+
+  function esc(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function render() {
+    const list = document.getElementById('task-list');
+    const shown = tasks.filter(t =>
+      filter === 'all'    ? true :
+      filter === 'done'   ? t.done :
+                            !t.done
+    );
+    if (!shown.length) {
+      list.innerHTML = '<div class="empty">No tasks here. Add one above!</div>';
+    } else {
+      list.innerHTML = shown.map(t => `
+        <div class="task-item${t.done ? ' done' : ''}" id="t${t.id}">
+          <div class="checkbox${t.done ? ' checked' : ''}" onclick="toggle(${t.id})" title="Toggle done"></div>
+          <span class="task-text">${esc(t.text)}</span>
+          ${t.tag ? `<span class="task-tag tag-${t.tag}">${t.tag}</span>` : ''}
+          <button class="delete-btn" onclick="remove(${t.id})" title="Delete task">&#10005;</button>
+        </div>
+      `).join('');
+    }
+    const done = tasks.filter(t => t.done).length;
+    document.getElementById('stats').textContent =
+      tasks.length ? `${done} of ${tasks.length} completed` : '';
+  }
+
+  function toggle(id) {
+    const t = tasks.find(t => t.id === id);
+    if (t) t.done = !t.done;
+    render();
+  }
+
+  function remove(id) {
+    const el = document.getElementById('t' + id);
+    if (el) {
+      el.style.transition = 'opacity 0.15s, transform 0.15s';
+      el.style.opacity = '0';
+      el.style.transform = 'translateX(8px)';
+      setTimeout(() => {
+        tasks = tasks.filter(t => t.id !== id);
+        render();
+      }, 150);
+    }
+  }
+
+  function addTask() {
+    const inp = document.getElementById('task-input');
+    const text = inp.value.trim();
+    if (!text) { inp.focus(); return; }
+    tasks.unshift({ id: nextId++, text, done: false, tag: '' });
+    inp.value = '';
+    render();
+  }
+
+  function setFilter(f, btn) {
+    filter = f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    render();
+  }
+
+  document.getElementById('task-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addTask();
+  });
+
+  render();
+
+  /* ── AI Copilot ── */
+  let chatOpen = false;
+  let botReplies = [
+    "Got it! I'll keep that in mind.",
+    "Great question! Based on your tasks, I'd suggest starting with the most urgent ones.",
+    "I can help you organize and prioritize. What would you like to focus on?",
+    "You have " + (() => tasks.filter(t=>!t.done).length)() + " pending tasks. Want me to help prioritize?",
+    "Sure! Breaking big tasks into smaller steps can really help with productivity.",
+    "That's a smart approach. Let me know if you need more suggestions!",
+    "I noticed you have some urgent items — want to tackle those first?",
+  ];
+  let replyIdx = 0;
+
+  function toggleChat() {
+    chatOpen = !chatOpen;
+    document.getElementById('chat-panel').classList.toggle('open', chatOpen);
+    document.getElementById('ai-fab').classList.toggle('open', chatOpen);
+    if (chatOpen) {
+      const body = document.getElementById('chat-body');
+      if (!body.children.length) appendMsg('bot', 'Hi! I\'m your AI Copilot ✦ How can I help with your tasks today?');
+      setTimeout(() => document.getElementById('chat-input').focus(), 250);
+    }
+  }
+
+  document.getElementById('ai-fab').addEventListener('click', toggleChat);
+
+  function appendMsg(role, text) {
+    const body = document.getElementById('chat-body');
+    const div = document.createElement('div');
+    div.className = 'msg ' + role;
+    const avatar = role === 'bot'
+      ? '<div class="msg-avatar" style="background:var(--accent);color:#fff">✦</div>'
+      : '<div class="msg-avatar" style="background:#e5e7eb;font-size:14px">👤</div>';
+    div.innerHTML = (role === 'bot' ? avatar : '') +
+      `<div class="bubble">${esc(text)}</div>` +
+      (role === 'user' ? avatar : '');
+    body.appendChild(div);
+    body.scrollTop = body.scrollHeight;
+  }
+
+  function showTyping() {
+    const body = document.getElementById('chat-body');
+    const div = document.createElement('div');
+    div.className = 'msg bot'; div.id = 'typing';
+    div.innerHTML = '<div class="msg-avatar" style="background:var(--accent);color:#fff">✦</div>' +
+      '<div class="bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div>';
+    body.appendChild(div);
+    body.scrollTop = body.scrollHeight;
+  }
+
+  function hideTyping() {
+    const el = document.getElementById('typing');
+    if (el) el.remove();
+  }
+
+  function sendMessage() {
+    const inp = document.getElementById('chat-input');
+    const text = inp.value.trim();
+    if (!text) return;
+    appendMsg('user', text);
+    inp.value = '';
+    document.getElementById('suggestions').style.display = 'none';
+    showTyping();
+    setTimeout(() => {
+      hideTyping();
+      const reply = botReplies[replyIdx % botReplies.length];
+      replyIdx++;
+      appendMsg('bot', reply);
+    }, 900 + Math.random() * 500);
+  }
+
+  function sendSuggestion(btn) {
+    const text = btn.textContent;
+    document.getElementById('chat-input').value = text;
+    sendMessage();
+  }
+
+  document.getElementById('chat-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') sendMessage();
+  });
+</script>
+</body>
+</html>
